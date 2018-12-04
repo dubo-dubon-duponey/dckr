@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+############################
+# This is a simple to use shell script that ensures:
+# - we always have a fresh image matching our Dockerfile/dckr magic that gets rebuilt only if necessary
+# - we always have a container started for that image, with our source mounted, that get restarted only if the image changed
+# - we transparently pass any command to be exec-ed inside this container
+############################
+
+#ults-previous
+#ults-old
+#ults-current
+#deb-current
+#deb-next
+#alpine-current
+
+DC_COLOR_RED=1
+DC_COLOR_GREEN=2
+DC_COLOR_YELLOW=3
+
+dckr_logger_info(){
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$DC_COLOR_GREEN"
+  local i
+  for i in "$@"; do
+    _dckr_stamp "[INFO]" "$i"
+  done
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
+}
+
+dckr_logger_warning(){
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$DC_COLOR_YELLOW"
+  local i
+  for i in "$@"; do
+    _dckr_stamp "[WARNING]" "$i"
+  done
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
+}
+
+dckr_logger_error(){
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$DC_COLOR_RED"
+  local i
+  for i in "$@"; do
+    _dckr_stamp "[ERROR]" "$i"
+  done
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
+}
+
+# Prefix a date to a log line and output to stderr
+_dckr_stamp(){
+  >&2 printf "[%s] %s\\n" "$(date)" "$*"
+}
+
+
+dckr_git(){
+  local _here
+  _here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
+
+  # Get the last git commit that changed the image or script, and whether they are dirty, to compute the tagname
+  TAG_NAME=$(git -C "$_here" log -1 --pretty=%H 2>/dev/null)
+  IS_DIRTY=$(git -C "$_here" status --porcelain 2>/dev/null)
+  # Dirty? Changes in there that haven't been committed. We are going to force a rebuild and restart every time.
+  if [ "$IS_DIRTY" ]; then
+    dckr_logger_warning "Your dckr tree is dirty. The image will be rebuilt and the container restarted everytime!"
+    TAG_NAME=${TAG_NAME}-dirty
+  fi
+  # No ref? This is NOT under version control...
+  if [ ! "$TAG_NAME" ]; then
+    dckr_logger_warning "Your dckr tree is not tracked. The image will be rebuilt and the container restarted everytime!"
+    TAG_NAME=untracked
+    IS_DIRTY=true
+  fi
+
+  CONST_DOCKERFILE="$_here/Dockerfile"
+}
+
+dckr_requirements(){
+  # Check that we have docker
+  if ! command -v docker >/dev/null; then
+    dckr_logger_error "You need to install docker for this to work."
+    exit 1
+  fi
+}
+
+# Enforce requirements
+dckr_requirements
+# Check what is the tree status
+dckr_git
+
+# Provisional for now
+CONST_DCKR_TYPE=${TYPE:-bash}
+CONST_IMAGE_TARGET=${TARGET:-ults-current}
+# Name of the image we are building
+CONST_IMAGE_NAME=dckr-scape-${CONST_DCKR_TYPE}-${CONST_IMAGE_TARGET}
+# Label used to flag our containers
+CONST_LABEL=com.dbdbdp.scape.${CONST_DCKR_TYPE}
+CONST_DOCKERFILE=${CONST_DOCKERFILE}.${CONST_DCKR_TYPE}
+
+# List all existing containers with our label
+if ! ALL_EXISTING_CONTAINERS=$(docker ps -aq --filter "label=${CONST_LABEL}"); then
+  dckr_logger_error "Docker failed!"
+  exit 1
+fi
+
+# Build if the image for that git commit does not exist, or if the file is dirty
+if [ ! "$(docker images ${CONST_IMAGE_NAME}:${TAG_NAME} -aq)" ] || [ "${IS_DIRTY}" ]; then
+  dckr_logger_info "Building a new image."
+  docker build --target "${CONST_IMAGE_TARGET}" -t "${CONST_IMAGE_NAME}:${TAG_NAME}" -f "${CONST_DOCKERFILE}" . 1>&2
+  # Since we know we rebuilt, let's get rid of every container in there
+  if [ "${ALL_EXISTING_CONTAINERS}" ]; then
+    dckr_logger_info "Removing existing out of date containers."
+    docker rm -f ${ALL_EXISTING_CONTAINERS} > /dev/null
+  fi
+  ALL_EXISTING_CONTAINERS=
+fi
+# If we don't already have a running container for our image, cleanup all (including stopped, just to be sure) then start one
+RUNNING_CONTAINER=$(docker ps -q --filter "label=${CONST_LABEL}=${CONST_IMAGE_TARGET}-$(pwd)")
+if [ ! "${RUNNING_CONTAINER}" ]; then
+  dckr_logger_info "No currently running container for our image."
+  if [ "${ALL_EXISTING_CONTAINERS}" ]; then
+    dckr_logger_info "Removing existing out of date containers."
+    docker rm -f ${ALL_EXISTING_CONTAINERS} > /dev/null
+  fi
+  dckr_logger_info "Starting new container from our image: ${CONST_IMAGE_NAME}:${TAG_NAME}."
+  RUNNING_CONTAINER=$(docker run --detach --tty --restart always \
+    --volume "$(pwd)":/project \
+    --label=${CONST_LABEL}="${CONST_IMAGE_TARGET}-$(pwd)" \
+    ${CONST_IMAGE_NAME}:${TAG_NAME})
+fi
+# Now, we know we have a running container from an up to date image, for sure
+# We can now exec the command we were asked to perform
+# Caveat: shell expansion happens on the host, unless you get your escaping right...
+dckr_logger_info "Running command '$*' inside our running container '${RUNNING_CONTAINER}'."
+docker exec -ti ${RUNNING_CONTAINER} $@
