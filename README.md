@@ -39,9 +39,12 @@ This means a couple of important things:
 
 ## How to install
 
-Clone somewhere.
+`brew install dubo-dubon-duponey/brews/dckr` if you are on macOS.
 
-Add somewhere in your path.
+Otherwise (or if you don't brew):
+ 
+  * clone somewhere
+  * add somewhere to your path.
 
 ## Gotcha
 
