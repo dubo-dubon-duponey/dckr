@@ -107,18 +107,18 @@ if [ ! "$(docker images ${CONST_IMAGE_NAME}:${TAG_NAME} -aq)" ] || [ "${IS_DIRTY
   # Since we know we rebuilt, let's get rid of every container in there
   if [ "${ALL_EXISTING_CONTAINERS}" ]; then
     dckr_logger_info "Removing existing out of date containers."
-    docker rm -f ${ALL_EXISTING_CONTAINERS} > /dev/null
+    docker rm -f ${ALL_EXISTING_CONTAINERS} 1>&2
   fi
   ALL_EXISTING_CONTAINERS=
 fi
 # If we don't already have a running container for our image, cleanup all (including stopped, just to be sure) then start one
-RUNNING_CONTAINER=$(docker ps -q --filter "label=${CONST_LABEL}=${CONST_IMAGE_TARGET}-$(pwd)")
+RUNNING_CONTAINER=$(docker ps -q --filter "ancestor=${CONST_IMAGE_NAME}:${TAG_NAME}" --filter "label=${CONST_LABEL}=${CONST_IMAGE_TARGET}-$(pwd)")
 if [ ! "${RUNNING_CONTAINER}" ]; then
-  dckr_logger_info "No currently running container for our image."
-  if [ "${ALL_EXISTING_CONTAINERS}" ]; then
-    dckr_logger_info "Removing existing out of date containers."
-    docker rm -f ${ALL_EXISTING_CONTAINERS} > /dev/null
-  fi
+  # dckr_logger_info "No currently running container for our image."
+  #if [ "${ALL_EXISTING_CONTAINERS}" ]; then
+  #  dckr_logger_info "Removing existing out of date containers."
+  #  docker rm -f ${ALL_EXISTING_CONTAINERS} 1>&2
+  #fi
   dckr_logger_info "Starting new container from our image: ${CONST_IMAGE_NAME}:${TAG_NAME}."
   RUNNING_CONTAINER=$(docker run --detach --tty --restart always \
     --volume "$(pwd)":/project \
