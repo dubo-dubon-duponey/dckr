@@ -1,0 +1,48 @@
+##################################################################
+### Base images
+##################################################################
+FROM alpine:3.8 as base-alpine-current
+
+FROM debian:stretch as base-deb-current
+FROM debian:buster as base-deb-next
+
+# Trusty is too busted
+FROM ubuntu:trusty as base-ults-old
+FROM ubuntu:xenial as base-ults-previous
+FROM ubuntu:bionic as base-ults-current
+
+##################################################################
+FROM base-alpine-current as alpine-current
+WORKDIR /project
+VOLUME /project
+CMD /bin/sh
+
+##################################################################
+FROM base-ults-old as ults-old
+WORKDIR /project
+VOLUME /project
+CMD /bin/sh
+
+##################################################################
+FROM base-ults-previous as ults-previous
+WORKDIR /project
+VOLUME /project
+CMD /bin/sh
+
+##################################################################
+FROM base-ults-current as ults-current
+WORKDIR /project
+VOLUME /project
+CMD /bin/sh
+
+##################################################################
+FROM base-deb-current as deb-current
+WORKDIR /project
+VOLUME /project
+CMD /bin/sh
+
+##################################################################
+FROM base-deb-next as deb-next
+WORKDIR /project
+VOLUME /project
+CMD /bin/sh
