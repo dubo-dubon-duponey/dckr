@@ -6,127 +6,190 @@
 # - we transparently pass any command to be exec-ed inside this container
 ############################
 
-#ults-previous
-#ults-old
-#ults-current
-#deb-current
-#deb-next
-#alpine-current
+TERM=${TERM:-}
+DOCKERFILE=${DOCKERFILE:-}
+TARGET=${TARGET:-}
 
-DC_COLOR_RED=1
-DC_COLOR_GREEN=2
-DC_COLOR_YELLOW=3
+CONST_DCKR_PREFIX="com.dbdbdp.dckr"
 
-dckr_logger_info(){
-  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$DC_COLOR_GREEN"
-  local i
-  for i in "$@"; do
-    _dckr_stamp "[INFO]" "$i"
-  done
-  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
-}
-
-dckr_logger_warning(){
-  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$DC_COLOR_YELLOW"
-  local i
-  for i in "$@"; do
-    _dckr_stamp "[WARNING]" "$i"
-  done
-  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
-}
-
-dckr_logger_error(){
-  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$DC_COLOR_RED"
-  local i
-  for i in "$@"; do
-    _dckr_stamp "[ERROR]" "$i"
-  done
-  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
-}
+############################
+# generic Helpers
+############################
+DCKR_COLOR_RED=1
+DCKR_COLOR_GREEN=2
+DCKR_COLOR_YELLOW=3
 
 # Prefix a date to a log line and output to stderr
 _dckr_stamp(){
   >&2 printf "[%s] %s\\n" "$(date)" "$*"
 }
 
+dckr_logger_info(){
+  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput setaf "$DCKR_COLOR_GREEN"
+  for _i in "$@"; do
+    _dckr_stamp "[INFO]" "$_i"
+  done
+  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput op
+}
 
+dckr_logger_warning(){
+  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput setaf "$DCKR_COLOR_YELLOW"
+  for _i in "$@"; do
+    _dckr_stamp "[WARNING]" "$_i"
+  done
+  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput op
+}
+
+dckr_logger_error(){
+  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput setaf "$DCKR_COLOR_RED"
+  for _i in "$@"; do
+    _dckr_stamp "[ERROR]" "$_i"
+  done
+  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput op
+}
+
+############################
+# Git helpers
+############################
 dckr_git(){
-  local _here
-  _here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
+  _path="$1"
+  _object="${2:-.}"
 
   # Get the last git commit that changed the image or script, and whether they are dirty, to compute the tagname
-  TAG_NAME=$(git -C "$_here" log -1 --pretty=%H 2>/dev/null)
-  IS_DIRTY=$(git -C "$_here" status --porcelain 2>/dev/null)
+  GIT_REF=$(git -C "$_path" log -1 --pretty=%H "$_object" 2>/dev/null)
+  GIT_DIRTY=$(git -C "$_path" status --porcelain "$_object" 2>/dev/null)
   # Dirty? Changes in there that haven't been committed. We are going to force a rebuild and restart every time.
-  if [ "$IS_DIRTY" ]; then
-    dckr_logger_warning "Your dckr tree is dirty. The image will be rebuilt and the container restarted everytime!"
-    TAG_NAME=${TAG_NAME}-dirty
-  fi
   # No ref? This is NOT under version control...
-  if [ ! "$TAG_NAME" ]; then
-    dckr_logger_warning "Your dckr tree is not tracked. The image will be rebuilt and the container restarted everytime!"
-    TAG_NAME=untracked
-    IS_DIRTY=true
+  if [[ ! "$GIT_REF" ]]; then
+    dckr_logger_warning "Your tree in $_path (for $_object) is not tracked."
+    GIT_REF=untracked
+    GIT_DIRTY=true
   fi
-
-  CONST_DOCKERFILE="$_here/Dockerfile"
-}
-
-dckr_requirements(){
-  # Check that we have docker
-  if ! command -v docker >/dev/null; then
-    dckr_logger_error "You need to install docker for this to work."
-    exit 1
+  if [[ "$GIT_DIRTY" ]]; then
+    dckr_logger_warning "Your tree in $_path (for $_object) is dirty."
+    GIT_REF=${GIT_REF}-dirty
   fi
 }
 
-# Enforce requirements
-dckr_requirements
-# Check what is the tree status
-dckr_git
-
-# Provisional for now
-CONST_DCKR_TYPE=${TYPE:-bash}
-CONST_IMAGE_TARGET=${TARGET:-ults-current}
-# Name of the image we are building
-CONST_IMAGE_NAME=dckr-scape-${CONST_DCKR_TYPE}-${CONST_IMAGE_TARGET}
-# Label used to flag our containers
-CONST_LABEL=com.dbdbdp.scape.${CONST_DCKR_TYPE}
-CONST_DOCKERFILE=${CONST_DOCKERFILE}.${CONST_DCKR_TYPE}
-
-# List all existing containers with our label
-if ! ALL_EXISTING_CONTAINERS=$(docker ps -aq --filter "label=${CONST_LABEL}"); then
-  dckr_logger_error "Docker failed!"
+# Check that we have docker
+if ! command -v docker >/dev/null; then
+  dckr_logger_error "You need to install docker for this to work."
   exit 1
 fi
 
-# Build if the image for that git commit does not exist, or if the file is dirty
-if [ ! "$(docker images ${CONST_IMAGE_NAME}:${TAG_NAME} -aq)" ] || [ "${IS_DIRTY}" ]; then
-  dckr_logger_info "Building a new image."
-  docker build --target "${CONST_IMAGE_TARGET}" -t "${CONST_IMAGE_NAME}:${TAG_NAME}" -f "${CONST_DOCKERFILE}" . 1>&2
-  # Since we know we rebuilt, let's get rid of every container in there
-  if [ "${ALL_EXISTING_CONTAINERS}" ]; then
-    dckr_logger_info "Removing existing out of date containers."
-    docker rm -f ${ALL_EXISTING_CONTAINERS} 1>&2
+dckr_remove_containers(){
+  _ancestor="$1"
+  _pth="$2"
+  _ex="$(docker ps -q \
+    --filter "ancestor=${CONST_DCKR_PREFIX}:${_ancestor}" \
+    --filter "volume=$_pth"
+  )"
+  if [[ "$_ex" ]]; then
+    docker rm -f "$_ex" 1>&2
   fi
-  ALL_EXISTING_CONTAINERS=
+}
+
+dckr_has_container(){
+  _ancestor="$1"
+  _pth="$2"
+  _dckr_git="$3"
+  _local_git="$4"
+  docker ps -q \
+    --filter "ancestor=${CONST_DCKR_PREFIX}:${_ancestor}" \
+    --filter "volume=$_pth" \
+    --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${_dckr_git}" \
+    --filter "label=${CONST_DCKR_PREFIX}.local_git=${_local_git}"
+}
+
+dckr_run_container(){
+  _ancestor="$1"
+  _pth="$2"
+  _dckr_git="$3"
+  _local_git="$4"
+  docker run --detach --tty --restart always \
+    --volume "$_pth":/project \
+    --label="${CONST_DCKR_PREFIX}.dckr_git=${_dckr_git}" \
+    --label="${CONST_DCKR_PREFIX}.local_git=${_local_git}" \
+    "${CONST_DCKR_PREFIX}:${_ancestor}"
+}
+
+dckr_has_image(){
+  _ancestor="$1"
+  _dckr_git="$2"
+  _local_git="$3"
+  docker images -qa "${CONST_DCKR_PREFIX}:${_ancestor}" \
+    --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${_dckr_git}" \
+    --filter "label=${CONST_DCKR_PREFIX}.local_git=${_local_git}"
+}
+
+docker_build_image(){
+  _ancestor="$1"
+  _target="$2"
+  _dckr_git="$3"
+  _local_git="$4"
+  _dockerfile="$5"
+  docker build --target "${_target}" -t "${CONST_DCKR_PREFIX}:${_ancestor}" \
+    --label "${CONST_DCKR_PREFIX}.dckr_git=${_dckr_git}" \
+    --label "${CONST_DCKR_PREFIX}.local_git=${_local_git}" \
+    -f "${_dockerfile}" . 1>&2
+}
+
+
+# Internal
+# XXX this is not portable - anyway to make it work for sh? using $0 would fail miserably with the right symlink combination, and readlink on mac is DOA
+_here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
+
+# Allows switching to a different Dockerfile
+DCKR_DOCKERFILE="${DOCKERFILE:-$_here/dckr.Dockerfile}"
+# Target inside the image
+DCKR_TARGET="${TARGET:-ubuntu-lts-current}"
+
+dckr_git "$_here" "."
+DCKR_D_GIT_REF="$GIT_REF"
+DCKR_D_GIT_DIRTY="$GIT_DIRTY"
+
+dckr_git "$(dirname "$DCKR_DOCKERFILE")" "$(basename "$DCKR_DOCKERFILE")"
+DCKR_L_GIT_REF="$GIT_REF"
+DCKR_L_GIT_DIRTY="$GIT_DIRTY"
+
+tag="$(printf "%s" "$DCKR_TARGET-$DCKR_DOCKERFILE" | shasum -a 256)"
+tag="${tag%%  -*}"
+
+# If we are dirty, stop the containers
+if [[ "$DCKR_L_GIT_DIRTY" ]] || [[ "$DCKR_D_GIT_DIRTY" ]]; then
+  dckr_logger_info "Your dckr / Dockerfile is dirty! Removing running containers. Commit your changes so that containers are preserved."
+  dckr_remove_containers "$tag" "$(pwd)"
 fi
-# If we don't already have a running container for our image, cleanup all (including stopped, just to be sure) then start one
-RUNNING_CONTAINER=$(docker ps -q --filter "ancestor=${CONST_IMAGE_NAME}:${TAG_NAME}" --filter "label=${CONST_LABEL}=${CONST_IMAGE_TARGET}-$(pwd)")
-if [ ! "${RUNNING_CONTAINER}" ]; then
-  # dckr_logger_info "No currently running container for our image."
-  #if [ "${ALL_EXISTING_CONTAINERS}" ]; then
-  #  dckr_logger_info "Removing existing out of date containers."
-  #  docker rm -f ${ALL_EXISTING_CONTAINERS} 1>&2
-  #fi
-  dckr_logger_info "Starting new container from our image: ${CONST_IMAGE_NAME}:${TAG_NAME}."
-  RUNNING_CONTAINER=$(docker run --detach --tty --restart always \
-    --volume "$(pwd)":/project \
-    --label=${CONST_LABEL}="${CONST_IMAGE_TARGET}-$(pwd)" \
-    ${CONST_IMAGE_NAME}:${TAG_NAME})
+
+id="$(dckr_has_container "$tag" "$(pwd)" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF")"
+
+# No running container? Check that our images are fresh
+if [[ ! "$id" ]]; then
+  force=
+  # Start with our base images
+  for i in "alpine-current" "debian-current" "debian-next" "ubuntu-lts-old" "ubuntu-lts-previous" "ubuntu-lts-current"; do
+    dckr_logger_info "Checking image $i"
+    im=$(dckr_has_image "$i" "$DCKR_D_GIT_REF" "$DCKR_D_GIT_REF")
+    # If our image is not there, or dckr is dirty, build
+    if [[ ! "$im" ]] || [[ "$DCKR_D_GIT_DIRTY" ]]; then
+      docker_build_image "$i" "$i" "$DCKR_D_GIT_REF" "$DCKR_D_GIT_REF" "$_here/dckr.Dockerfile"
+      # XXX must rebuild the other image as well, because we do not know
+      force=true
+    fi
+  done
+
+  # Now, our target image
+  im=$(dckr_has_image "$tag" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF")
+  if [[ ! "$im" ]] || [[ "$DCKR_L_GIT_DIRTY" ]] || [[ "$force" ]]; then
+    docker_build_image "$tag" "$DCKR_TARGET" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF" "$DCKR_DOCKERFILE"
+  fi
+
+  # Now, start the damn container
+  id=$(dckr_run_container "$tag" "$(pwd)" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF")
 fi
+
 # Now, we know we have a running container from an up to date image, for sure
 # We can now exec the command we were asked to perform
 # Caveat: shell expansion happens on the host, unless you get your escaping right...
-dckr_logger_info "Running command '$*' inside our running container '${RUNNING_CONTAINER}'."
-docker exec -ti ${RUNNING_CONTAINER} $@
+dckr_logger_info "Running command '$*' inside our running container '${id}'."
+docker exec -ti "${id}" "$@"

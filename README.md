@@ -1,6 +1,6 @@
 # dckr
 
-A simple shell script that lets you transparently run your project build / test / random command inside a container.
+Lets you easily and transparently run your project build / test / random command inside containers.
 
 For example, assuming you have a project where you would typically run:
 
@@ -10,31 +10,33 @@ Just call:
 
 `dckr ls -lA`
 
-Without the noise:
+Or without the noise:
 
 `dckr ls -lA 2>/dev/null`
 
-## Controlling the FROM
+## Controlling the base image
 
 You can control what base operating system will be used for the container using the TARGET environment variable:
 
 `TARGET=ults-current dckr make all`
 
-TARGET values are visible in `Dockerfile.naked`.
+TARGET values provided as a courtesy are visible in `dckr.Dockerfile`.
 
-## Customizing the images
+## Using your own image
 
-You can further specialize the images by creating a `Dockerfile.THING` matching your expectations (start with `Dockerfile.naked`), and invoking dckr with the TYPE variable:
+You can taylor this to your needs by creating a `Dockerfile` anywhere matching your expectations (start with `dckr.Dockerfile.example`), and invoking dckr with the DOCKERFILE variable:
 
-`TYPE=THING TARGET=SOMETHING dckr make all`
+`DOCKERFILE=thingie/Dockerfile TARGET=some-target dckr ls -lA`
 
-## Live containers
+Be sure to inherit one of the base `com.dbdbdp.dckr:` images.
+
+## Containers are "live"
 
 After the first invocation, the container is "live" (eg: kept around).
 
 This means a couple of important things:
 
- * commands are cumulative... just like they are on your local copy...
+ * commands are cumulative... just like they are on your local system...
  * calling on further commands is very fast (in a shell, the overhead is the cost of exec-ing and docker IO)
 
 ## How to install
