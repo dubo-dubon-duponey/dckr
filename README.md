@@ -8,12 +8,15 @@ For example, assuming you have a project where you would typically run:
 
 `cat foo`
 
+(or more likely `make thing`)
 
 Just call:
 
 `dckr ls -lA`
 
 `dckr cat foo`
+
+`dckr make thing`
 
 Or without the noise:
 
@@ -25,23 +28,23 @@ No boilerplate, no monkeying around.
 
 ## Controlling the base image
 
-You can control what base operating system will be used for the container using the TARGET environment variable:
+You can control what base operating system will be used for the container using the `TARGET` environment variable:
 
-`TARGET=ults-current dckr make all`
+`TARGET=ubuntu-lts-current dckr make all`
 
 `TARGET` values provided by default are visible in `dckr.Dockerfile`.
 
 ## Using your own image
 
-You can taylor this to your needs by creating a `Dockerfile` anywhere matching your expectations (start with `dckr.Dockerfile.example`), and invoking dckr with the `DOCKERFILE` variable:
+You can taylor this to your needs (probably you want your favorite language runtime and tools installed) by creating a `Dockerfile` anywhere (start by copying `dckr.Dockerfile.example`), and invoking dckr with the `DOCKERFILE` variable:
 
 `DOCKERFILE=thingie/Dockerfile TARGET=some-target dckr ls -lA`
 
 Be sure to inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`).
 
-## Containers are "live"
+## Containers are "live"
 
-After the first invocation, the container is "live" (eg: kept around).
+After the first invocation, the container is "live" (eg: kept around), and changes in your project folder are reflected inside the container immediately.
 
 This means a couple of important things:
 
@@ -63,6 +66,6 @@ Expect running complicated shell commands to be challenging (you have to get you
 
 Keep it simple.
 
-This is mostly meant to be for stuff like:
+This is mostly meant to be used for stuff like:
 
-`dckr make test thingie whatever`
+`dckr make test thingie`
