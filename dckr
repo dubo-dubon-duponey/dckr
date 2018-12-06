@@ -48,29 +48,6 @@ dckr_logger_error(){
   [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput op
 }
 
-############################
-# Git helpers
-############################
-dckr_git(){
-  _path="$1"
-  _object="${2:-.}"
-
-  # Get the last git commit that changed the image or script, and whether they are dirty, to compute the tagname
-  GIT_REF=$(git -C "$_path" log -1 --pretty=%H "$_object" 2>/dev/null)
-  GIT_DIRTY=$(git -C "$_path" status --porcelain "$_object" 2>/dev/null)
-  # Dirty? Changes in there that haven't been committed. We are going to force a rebuild and restart every time.
-  # No ref? This is NOT under version control...
-  if [[ ! "$GIT_REF" ]]; then
-    dckr_logger_warning "Your tree in $_path (for $_object) is not tracked."
-    GIT_REF=untracked
-    GIT_DIRTY=true
-  fi
-  if [[ "$GIT_DIRTY" ]]; then
-    dckr_logger_warning "Your tree in $_path (for $_object) is dirty."
-    GIT_REF=${GIT_REF}-dirty
-  fi
-}
-
 # Check that we have docker
 if ! command -v docker >/dev/null; then
   dckr_logger_error "You need to install docker for this to work."
@@ -80,7 +57,7 @@ fi
 dckr_remove_containers(){
   _ancestor="$1"
   _pth="$2"
-  _ex="$(docker ps -q \
+  _ex="$(docker ps -qa \
     --filter "ancestor=${CONST_DCKR_PREFIX}:${_ancestor}" \
     --filter "volume=$_pth"
   )"
@@ -113,11 +90,19 @@ dckr_run_container(){
     "${CONST_DCKR_PREFIX}:${_ancestor}"
 }
 
+docker_remove_image(){
+  _ancestor="$1"
+  _ex="$(docker images -q "${CONST_DCKR_PREFIX}:${_ancestor}")"
+  if [[ "$_ex" ]]; then
+    docker rmi -f "$_ex" 1>&2
+  fi
+}
+
 dckr_has_image(){
   _ancestor="$1"
   _dckr_git="$2"
   _local_git="$3"
-  docker images -qa "${CONST_DCKR_PREFIX}:${_ancestor}" \
+  docker images -q "${CONST_DCKR_PREFIX}:${_ancestor}" \
     --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${_dckr_git}" \
     --filter "label=${CONST_DCKR_PREFIX}.local_git=${_local_git}"
 }
@@ -134,7 +119,6 @@ docker_build_image(){
     -f "${_dockerfile}" . 1>&2
 }
 
-
 # Internal
 # XXX this is not portable - anyway to make it work for sh? using $0 would fail miserably with the right symlink combination, and readlink on mac is DOA
 _here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
@@ -144,48 +128,54 @@ DCKR_DOCKERFILE="${DOCKERFILE:-$_here/dckr.Dockerfile}"
 # Target inside the image
 DCKR_TARGET="${TARGET:-ubuntu-lts-current}"
 
-dckr_git "$_here" "."
-DCKR_D_GIT_REF="$GIT_REF"
-DCKR_D_GIT_DIRTY="$GIT_DIRTY"
+# DCKR hash
+DCKR_HASH="$(cat "$_here/dckr" "$_here/dckr.Dockerfile" | shasum -a 256)"
+DCKR_HASH=${DCKR_HASH%%  -*}
 
-dckr_git "$(dirname "$DCKR_DOCKERFILE")" "$(basename "$DCKR_DOCKERFILE")"
-DCKR_L_GIT_REF="$GIT_REF"
-DCKR_L_GIT_DIRTY="$GIT_DIRTY"
+# Dockerfile hash
+DCKR_DOCKERFILE_HASH="$(cat "$DCKR_DOCKERFILE" | shasum -a 256)"
+DCKR_DOCKERFILE_HASH=${DCKR_DOCKERFILE_HASH%%  -*}
 
+# Tag hash
 tag="$(printf "%s" "$DCKR_TARGET-$DCKR_DOCKERFILE" | shasum -a 256)"
 tag="${tag%%  -*}"
 
-# If we are dirty, stop the containers
-if [[ "$DCKR_L_GIT_DIRTY" ]] || [[ "$DCKR_D_GIT_DIRTY" ]]; then
-  dckr_logger_info "Your dckr / Dockerfile is dirty! Removing running containers. Commit your changes so that containers are preserved."
-  dckr_remove_containers "$tag" "$(pwd)"
-fi
+# Get a running container
+id="$(dckr_has_container "$tag" "$(pwd)" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")"
 
-id="$(dckr_has_container "$tag" "$(pwd)" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF")"
-
-# No running container? Check that our images are fresh
+# No running container matching our data?
 if [[ ! "$id" ]]; then
   force=
+
+  # Remove existing containers with old hashes
+  dckr_remove_containers "$tag" "$(pwd)"
+
   # Start with our base images
   for i in "alpine-current" "debian-current" "debian-next" "ubuntu-lts-old" "ubuntu-lts-previous" "ubuntu-lts-current"; do
     dckr_logger_info "Checking image $i"
-    im=$(dckr_has_image "$i" "$DCKR_D_GIT_REF" "$DCKR_D_GIT_REF")
-    # If our image is not there, or dckr is dirty, build
-    if [[ ! "$im" ]] || [[ "$DCKR_D_GIT_DIRTY" ]]; then
-      docker_build_image "$i" "$i" "$DCKR_D_GIT_REF" "$DCKR_D_GIT_REF" "$_here/dckr.Dockerfile"
+    im=$(dckr_has_image "$i" "$DCKR_HASH" "$DCKR_HASH")
+    # If our image is not there
+    if [[ ! "$im" ]]; then
+      # Remove previous versions
+      docker_remove_image "$i"
+      # Build it
+      docker_build_image "$i" "$i" "$DCKR_HASH" "$DCKR_HASH" "$_here/dckr.Dockerfile"
       # XXX must rebuild the other image as well, because we do not know
       force=true
     fi
   done
 
   # Now, our target image
-  im=$(dckr_has_image "$tag" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF")
-  if [[ ! "$im" ]] || [[ "$DCKR_L_GIT_DIRTY" ]] || [[ "$force" ]]; then
-    docker_build_image "$tag" "$DCKR_TARGET" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF" "$DCKR_DOCKERFILE"
+  im=$(dckr_has_image "$tag" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")
+  if [[ ! "$im" ]] || [[ "$force" ]]; then
+    # Remove previous versions
+    docker_remove_image "$tag"
+    # Build it
+    docker_build_image "$tag" "$DCKR_TARGET" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH" "$DCKR_DOCKERFILE"
   fi
 
   # Now, start the damn container
-  id=$(dckr_run_container "$tag" "$(pwd)" "$DCKR_D_GIT_REF" "$DCKR_L_GIT_REF")
+  id=$(dckr_run_container "$tag" "$(pwd)" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")
 fi
 
 # Now, we know we have a running container from an up to date image, for sure
