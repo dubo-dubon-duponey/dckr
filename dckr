@@ -127,7 +127,7 @@ _here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
 # Allows switching to a different Dockerfile
 DCKR_DOCKERFILE="${DOCKERFILE:-$_here/dckr.Dockerfile}"
 # Target inside the image
-DCKR_TARGET="${TARGET:-ubuntu-lts-current}"
+DCKR_TARGET="${TARGET:-alpine-current}"
 
 # DCKR hash
 DCKR_HASH="$(cat "$_here/dckr" "$_here/dckr.Dockerfile" | shasum -a 256)"

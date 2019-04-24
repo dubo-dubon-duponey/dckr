@@ -1,6 +1,6 @@
 ##################################################################
 FROM com.dbdbdp.dckr:alpine-current as alpine-current
-RUN apk add --no-cache make git bash ncurses grep gpg
+RUN apk add --no-cache make git bash ncurses grep gnupg
 
 ##################################################################
 FROM com.dbdbdp.dckr:ubuntu-lts-old as ubuntu-lts-old
@@ -8,7 +8,7 @@ RUN apt-get install -y make git gpg shellcheck
 
 ##################################################################
 FROM com.dbdbdp.dckr:ubuntu-lts-previous as ubuntu-lts-previous
-RUN apt-get install -y make git gpg shellcheck
+RUN apt-get install -y make git shellcheck
 
 ##################################################################
 FROM com.dbdbdp.dckr:ubuntu-lts-current as ubuntu-lts-current

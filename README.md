@@ -34,6 +34,8 @@ You can control what base operating system will be used for the container using 
 
 `TARGET` values provided by default are visible in `dckr.Dockerfile`.
 
+If `TARGET` is not specified, the latest alpine is going to be used.
+
 ## Using your own image
 
 You can taylor this to your needs (probably you want your favorite language runtime and tools installed) by creating a `Dockerfile` anywhere (start by copying `dckr.Dockerfile.example`), and invoking dckr with the `DOCKERFILE` variable:
