@@ -69,3 +69,10 @@ Keep it simple.
 This is mostly meant to be used for stuff like:
 
 `dckr make test thingie`
+
+## This project is not...
+
+ * the proper way to docker-ize your application
+ * meant to be used to reproduce complex, multi-containers applications
+ * a replacement for compose
+ * multi-platform (tested only on macos for now)

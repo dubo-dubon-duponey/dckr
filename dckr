@@ -66,6 +66,7 @@ dckr_remove_containers(){
   fi
 }
 
+# XXX apparently sometimes we MAY have TWO or more of these matching here
 dckr_has_container(){
   _ancestor="$1"
   _pth="$2"
