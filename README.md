@@ -1,4 +1,6 @@
 # dckr
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_shield)
+
 
 Lets you easily and transparently run your project build / test / random command inside containers.
 
@@ -85,3 +87,7 @@ Also, the very first run of `dckr` will be SLOW (as it will download and update 
  * meant to be used to reproduce complex, multi-containers applications
  * a replacement for compose
  * multi-platform (tested only on macos for now)
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_large)
