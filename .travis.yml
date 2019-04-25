@@ -1,0 +1,18 @@
+language: bash
+
+services:
+  - docker
+
+script:
+  - ./dckr ls -lA 2>/dev/null
+  - ./dckr uname -a 2>/dev/null
+
+addons:
+  apt:
+    packages:
+    - shellcheck
+
+matrix:
+  include:
+    - os: linux
+      dist: xenial
