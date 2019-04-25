@@ -42,7 +42,12 @@ You can taylor this to your needs (probably you want your favorite language runt
 
 `DOCKERFILE=thingie/Dockerfile TARGET=some-target dckr ls -lA`
 
-Be sure to inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`).
+Be sure to inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`), or to add the following to your image:
+
+```
+WORKDIR /dckr-project-mount
+VOLUME /dckr-project-mount
+```
 
 ## Containers are "live"
 
@@ -71,6 +76,8 @@ Keep it simple.
 This is mostly meant to be used for stuff like:
 
 `dckr make test thingie`
+
+Also, the very first run of `dckr` will be SLOW (as it will download and update all base images).
 
 ## This project is not...
 
