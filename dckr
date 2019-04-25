@@ -252,7 +252,8 @@ fi
 # Now, we know we have a running container from an up to date image, for sure
 # We can now exec the command we were asked to perform
 # Caveat: shell expansion happens on the host, unless you get your escaping right...
-dckr_logger_info "Running command '$*' inside our running container based on $DCKR_TARGET (id: '${id}')."
+dckr_logger_info "Running command '$*'"
+dckr_logger_info " - target: $DCKR_TARGET" " - origin dockerfile: $DCKR_DOCKERFILE" " - id: '${id}'"
 if ! docker exec -ti "${id}" "$@"; then
   dckr_logger_error "Docker failed to run command!"
   exit 1
