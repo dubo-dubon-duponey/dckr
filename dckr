@@ -65,9 +65,11 @@ docker_remove_image(){
     dckr_logger_info "No such image. Doing nothing."
     return
   fi
+  # shellcheck disable=SC2086
   if ! docker rmi -f $ex 1>&2; then
     dckr_logger_error "Docker failed to remove the image" "$ex"
-    exit 1
+    # XXX
+    # exit 1
   fi
   dckr_logger_info "Done removing image."
 }
@@ -136,6 +138,7 @@ dckr_remove_containers(){
     dckr_logger_info "No such container. Doing nothing."
     return
   fi
+  # shellcheck disable=SC2086
   if ! docker rm -f $ex 1>&2; then
     dckr_logger_error "Docker failed to remove container" "$ex"
     exit 1
@@ -204,7 +207,7 @@ DCKR_HASH="$(cat "$_here/dckr" "$_here/dckr.Dockerfile" | shasum -a 256)"
 DCKR_HASH=${DCKR_HASH%%  -*}
 
 # Dockerfile hash
-DCKR_DOCKERFILE_HASH="$(cat "$DCKR_DOCKERFILE" | shasum -a 256)"
+DCKR_DOCKERFILE_HASH="$(shasum -a 256 "$DCKR_DOCKERFILE")"
 DCKR_DOCKERFILE_HASH=${DCKR_DOCKERFILE_HASH%%  -*}
 
 # Tag hash

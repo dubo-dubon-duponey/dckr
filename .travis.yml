@@ -4,8 +4,7 @@ services:
   - docker
 
 script:
-  - ./dckr ls -lA 2>/dev/null
-  - ./dckr uname -a 2>/dev/null
+  - ./test.sh
 
 addons:
   apt:
