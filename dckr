@@ -26,11 +26,11 @@ _dckr_stamp(){
   local i
   shift
   shift
-  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput setaf "$color"
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput setaf "$color"
   for i in "$@"; do
     >&2 printf "[%s] [%s] %s\\n" "$(date)" "$level" "$i"
   done
-  [[ "$TERM" ]] && [[ -t 2 ]] && >&2 tput op
+  [ "$TERM" ] && [ -t 2 ] && >&2 tput op
 }
 
 dckr_logger_info(){
@@ -218,7 +218,7 @@ tag="${tag%%  -*}"
 id="$(dckr_has_container "$tag" "$(pwd)" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")"
 
 # No running container matching our data?
-if [[ ! "$id" ]]; then
+if [ ! "$id" ]; then
   force=
 
   # Remove all existing containers with that tag in that path (likely stale from old Dockerfile or dckr)
