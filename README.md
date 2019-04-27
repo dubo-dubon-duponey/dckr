@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/dubo-dubon-duponey/dckr.svg?branch=master)](https://travis-ci.org/dubo-dubon-duponey/dckr)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_shield)
 
-Lets you easily and transparently run your project build / test / random command inside containers.
+dckr is a simple, no dependency, shell-script that transparently lets you develop your project inside containers.
 
 For example, assuming you have a project where you would typically run:
 
@@ -11,7 +11,7 @@ For example, assuming you have a project where you would typically run:
 
 `cat foo`
 
-(or more likely `make thing`)
+(or more likely `make thing`, or `yarn test`)
 
 Just call:
 
@@ -27,7 +27,7 @@ Or without the noise:
 
 That's it.
 
-No boilerplate, no monkeying around.
+No boilerplate, no container setup, no monkeying around.
 
 ## Controlling the base image
 
@@ -41,20 +41,22 @@ If `TARGET` is not specified, the latest alpine is going to be used.
 
 ## Using your own image
 
-You can taylor this to your needs (probably you want your favorite language runtime and tools installed) by creating a `Dockerfile` anywhere (start by copying `dckr.Dockerfile.example`), and invoking dckr with the `DOCKERFILE` variable:
+You can taylor this to your needs (probably you want your favorite language runtime and tools installed) by creating a `Dockerfile` 
+anywhere (start by copying `dckr.Dockerfile.example`), and invoking dckr with the `DOCKERFILE` variable:
 
 `DOCKERFILE=thingie/Dockerfile TARGET=some-target dckr ls -lA`
 
-Be sure to inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`), or to add the following to your image:
+Be sure to inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`), or to add the following to your custom image:
 
 ```
 WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 ```
 
-## Containers are "live"
+## After a command has been run, Containers stay "live"
 
-After the first invocation, the container is "live" (eg: kept around), and changes in your project folder are reflected inside the container immediately.
+After the first invocation, the container is "live" (eg: kept around), and changes in your project 
+folder are reflected inside the container immediately.
 
 This means a couple of important things:
 
@@ -66,7 +68,7 @@ This means a couple of important things:
 `brew install dubo-dubon-duponey/brews/dckr` if you are on macOS.
 
 Otherwise (or if you don't brew):
- 
+
   * clone "somewhere"
   * add "somewhere" to your path
 
@@ -80,14 +82,13 @@ This is mostly meant to be used for stuff like:
 
 `dckr make test thingie`
 
-Also, the very first run of `dckr` will be SLOW (as it will download and update all base images).
+Also, the very first run of `dckr` will be SLOW (as it will download all base images).
 
 ## This project is not...
 
- * the proper way to docker-ize your application
+ * the proper way to docker-ize your application for production
  * meant to be used to reproduce complex, multi-containers applications
  * a replacement for compose
- * multi-platform (tested only on macos for now)
 
 ## License
 
