@@ -53,6 +53,8 @@ WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 ```
 
+You may also want to downgrade to `USER dckr` in your custom dockerfile after you are done installing packages for example.
+
 ## After a command has been run, Containers stay "live"
 
 After the first invocation, the container is "live" (eg: kept around), and changes in your project 
