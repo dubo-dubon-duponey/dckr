@@ -1,3 +1,4 @@
 ##################################################################
-FROM com.dbdbdp.dckr:debian-next as debian-next
-RUN apt-get install -y shellcheck
+FROM com.dbdbdp.dckr:debian-current as debian-current
+RUN apt-get install -y --no-install-recommends shellcheck=0.5.0-3
+USER dckr

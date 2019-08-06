@@ -3,27 +3,31 @@
 [![Build Status](https://travis-ci.org/dubo-dubon-duponey/dckr.svg?branch=master)](https://travis-ci.org/dubo-dubon-duponey/dckr)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_shield)
 
-dckr is a simple, no dependency, shell-script that transparently lets you develop your project inside containers.
+dckr is a simple, no dependency shell-script that transparently lets you develop your project inside containers.
 
 For example, assuming you have a project where you would typically run:
 
-`ls -lA`
-
-`cat foo`
-
-(or more likely `make thing`, or `yarn test`)
+```bash
+ls -lA
+cat foo
+make thing
+yarn test
+```
 
 Just call:
 
-`dckr ls -lA`
-
-`dckr cat foo`
-
-`dckr make thing`
+```bash
+dckr ls -lA
+dckr cat foo
+dckr make thing
+dckr yarn test
+```
 
 Or without the noise:
 
-`dckr ls -lA 2>/dev/null`
+```bash
+dckr ls -lA 2>/dev/null
+```
 
 That's it.
 
@@ -39,23 +43,23 @@ You can control what base operating system will be used for the container using 
 
 If `TARGET` is not specified, the latest alpine is going to be used.
 
-## Using your own image
+## Using your own images
 
 You can taylor this to your needs (probably you want your favorite language runtime and tools installed) by creating a `Dockerfile` 
 anywhere (start by copying `dckr.Dockerfile.example`), and invoking dckr with the `DOCKERFILE` variable:
 
 `DOCKERFILE=thingie/Dockerfile TARGET=some-target dckr ls -lA`
 
-Be sure to inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`), or to add the following to your custom image:
+Be sure to either inherit one of the base `com.dbdbdp.dckr:FOO` images (defined in `dckr.Dockerfile`), or add the following to your custom image:
 
-```
+```bash
 WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 ```
 
 You may also want to downgrade to `USER dckr` in your custom dockerfile after you are done installing packages for example.
 
-## After a command has been run, Containers stay "live"
+## "Live" containers
 
 After the first invocation, the container is "live" (eg: kept around), and changes in your project 
 folder are reflected inside the container immediately.
@@ -67,7 +71,11 @@ This means a couple of important things:
 
 ## How to install
 
-`brew install dubo-dubon-duponey/brews/dckr` if you are on macOS.
+On macOS:
+
+```bash
+brew install dubo-dubon-duponey/brews/dckr
+```
 
 Otherwise (or if you don't brew):
 
@@ -82,15 +90,27 @@ Keep it simple.
 
 This is mostly meant to be used for stuff like:
 
-`dckr make test thingie`
+```bash
+dckr make test thingie
+```
 
 Also, the very first run of `dckr` will be SLOW (as it will download all base images).
+
+## Develop dckr
+
+You need `docker`, `shellcheck` and `hadolint` installed.
+
+`./test.sh` must pass.
 
 ## This project is not...
 
  * the proper way to docker-ize your application for production
  * meant to be used to reproduce complex, multi-containers applications
  * a replacement for compose
+
+## TODO
+
+ * investigate how to make this useful on different architectures / buildx
 
 ## License
 
