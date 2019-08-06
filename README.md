@@ -100,6 +100,10 @@ You need `docker`, `shellcheck` and `hadolint` installed.
  * meant to be used to reproduce complex, multi-containers applications
  * a replacement for compose
 
+## TODO
+
+ * investigate how to make this useful on different architectures / buildx
+
 ## License
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_large)

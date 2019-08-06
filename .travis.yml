@@ -7,12 +7,11 @@ script:
   - ./test.sh
 
 addons:
-  apt:
+  homebrew:
     packages:
-    - shellcheck
-    - hadolint
+      - shellcheck
+      - hadolint
 
 matrix:
   include:
-    - os: linux
-      dist: xenial
+    - os: osx
