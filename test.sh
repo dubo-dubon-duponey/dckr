@@ -45,7 +45,7 @@ fi
 echo "Testing custom dockerfile with debian target"
 
 shouldBe="version: 0.5.0"
-is="$(DOCKERFILE=./dckr.Dockerfile.example TARGET=debian-next ./dckr shellcheck --version  2>/dev/null | grep version: | tr -s '\r' '\n')"
+is="$(DOCKERFILE=./dckr.Dockerfile.example TARGET=debian-current ./dckr shellcheck --version  2>/dev/null | grep version: | tr -s '\r' '\n')"
 if [ "$is" != "$shouldBe" ]; then
   echo "Should have been: $shouldBe"
   echo "Was: $is"
