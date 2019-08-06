@@ -1,8 +1,30 @@
 #!/usr/bin/env bash
 
+echo "Linting"
+
+if ! shellcheck -a -x "./test.sh"; then
+  echo "Failed linting test.sh"
+  exit 1
+fi
+
+if ! shellcheck -a -x "./dckr"; then
+  echo "Failed linting dckr"
+  exit 1
+fi
+
+if ! hadolint dckr.Dockerfile; then
+  echo "Failed linting dckr.Dockerfile"
+  exit 1
+fi
+
+if ! hadolint dckr.Dockerfile.example; then
+  echo "Failed linting dckr.Dockerfile.example"
+  exit 1
+fi
+
 echo "Testing default target"
 
-shouldBe="Welcome to Alpine Linux 3.9"
+shouldBe="Welcome to Alpine Linux 3.10"
 is="$(./dckr cat /etc/issue 2>/dev/null | grep Alpine | tr -s '\r' '\n')"
 if [ "$is" != "$shouldBe" ]; then
   echo "Should have been: $shouldBe"
@@ -29,8 +51,3 @@ if [ "$is" != "$shouldBe" ]; then
   echo "Was: $is"
   exit 1
 fi
-
-echo "Linting"
-
-shellcheck -a -x "./test.sh"
-shellcheck -a -x "./dckr"

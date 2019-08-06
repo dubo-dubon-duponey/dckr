@@ -88,6 +88,12 @@ This is mostly meant to be used for stuff like:
 
 Also, the very first run of `dckr` will be SLOW (as it will download all base images).
 
+## Develop dckr
+
+You need `docker`, `shellcheck` and `hadolint` installed.
+
+`./test.sh` must pass.
+
 ## This project is not...
 
  * the proper way to docker-ize your application for production

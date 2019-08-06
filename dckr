@@ -225,7 +225,7 @@ if [ ! "$id" ]; then
   dckr_remove_containers "$tag" "$(pwd)"
 
   # Build everything: start with dckr base images
-  for i in "alpine-current" "debian-current" "debian-next" "ubuntu-lts-old" "ubuntu-lts-previous" "ubuntu-lts-current" "ubuntu-next"; do
+  for i in "alpine-current" "alpine-next" "debian-old" "debian-current" "debian-next" "ubuntu-lts-old" "ubuntu-lts-current" "ubuntu-current" "ubuntu-next"; do
     dckr_logger_info " *** Checking image $i"
     im=$(dckr_has_image "$i" "$DCKR_HASH" "$DCKR_HASH")
     # If our image is not there
