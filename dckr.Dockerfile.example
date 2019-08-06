@@ -1,3 +1,4 @@
 ##################################################################
 FROM com.dbdbdp.dckr:debian-next as debian-next
 RUN apt-get install -y shellcheck
+USER dckr

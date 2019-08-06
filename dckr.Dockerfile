@@ -1,29 +1,35 @@
 ##################################################################
 ### Base images
 ##################################################################
-FROM alpine:3.9 as alpine-current
+FROM alpine:3.10 as alpine-current
 RUN apk update && apk upgrade
 RUN adduser -D -g dckr dckr
 WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 CMD /bin/sh
 
-FROM debian:stretch as debian-current
+FROM alpine:edge as alpine-next
+RUN apk update && apk upgrade
+RUN adduser -D -g dckr dckr
+WORKDIR /dckr-project-mount
+VOLUME /dckr-project-mount
+CMD /bin/sh
+
+FROM debian:stretch-slim as debian-old
 RUN apt-get update && apt-get -y upgrade
 RUN addgroup dckr && useradd -d /home/dckr -g dckr -m -s /bin/bash dckr
 WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 CMD /bin/sh
 
-FROM debian:buster as debian-next
+FROM debian:buster-slim as debian-current
 RUN apt-get update && apt-get -y upgrade
 RUN addgroup dckr && useradd -d /home/dckr -g dckr -m -s /bin/bash dckr
 WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 CMD /bin/sh
 
-# trusty / 14.04: EOL 25 April 2019
-FROM ubuntu:trusty as ubuntu-lts-old
+FROM debian:testing-slim as debian-next
 RUN apt-get update && apt-get -y upgrade
 RUN addgroup dckr && useradd -d /home/dckr -g dckr -m -s /bin/bash dckr
 WORKDIR /dckr-project-mount
@@ -46,8 +52,16 @@ WORKDIR /dckr-project-mount
 VOLUME /dckr-project-mount
 CMD /bin/sh
 
-# 19.04
-FROM ubuntu:disco as ubuntu-next
+# 19.04 - disco
+FROM ubuntu:rolling as ubuntu-current
+RUN apt-get update && apt-get -y upgrade
+RUN addgroup dckr && useradd -d /home/dckr -g dckr -m -s /bin/bash dckr
+WORKDIR /dckr-project-mount
+VOLUME /dckr-project-mount
+CMD /bin/sh
+
+# 19.10 - eoan
+FROM ubuntu:devel as ubuntu-next
 RUN apt-get update && apt-get -y upgrade
 RUN addgroup dckr && useradd -d /home/dckr -g dckr -m -s /bin/bash dckr
 WORKDIR /dckr-project-mount
