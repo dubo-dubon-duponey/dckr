@@ -7,23 +7,27 @@ dckr is a simple, no dependency shell-script that transparently lets you develop
 
 For example, assuming you have a project where you would typically run:
 
-`ls -lA`
-
-`cat foo`
-
-(or more likely `make thing`, or `yarn test`)
+```bash
+ls -lA
+cat foo
+make thing
+yarn test
+```
 
 Just call:
 
-`dckr ls -lA`
-
-`dckr cat foo`
-
-`dckr make thing`
+```bash
+dckr ls -lA
+dckr cat foo
+dckr make thing
+dckr yarn test
+```
 
 Or without the noise:
 
-`dckr ls -lA 2>/dev/null`
+```bash
+dckr ls -lA 2>/dev/null
+```
 
 That's it.
 
@@ -69,7 +73,9 @@ This means a couple of important things:
 
 On macOS:
 
-`brew install dubo-dubon-duponey/brews/dckr`
+```bash
+brew install dubo-dubon-duponey/brews/dckr
+```
 
 Otherwise (or if you don't brew):
 
@@ -84,7 +90,9 @@ Keep it simple.
 
 This is mostly meant to be used for stuff like:
 
-`dckr make test thingie`
+```bash
+dckr make test thingie
+```
 
 Also, the very first run of `dckr` will be SLOW (as it will download all base images).
 
