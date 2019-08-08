@@ -24,6 +24,8 @@ fi
 
 echo "Testing default target"
 
+export CACHE_DIR=cache
+
 shouldBe="Welcome to Alpine Linux 3.10"
 is="$(./dckr cat /etc/issue 2>/dev/null | grep Alpine | tr -s '\r' '\n')"
 if [ "$is" != "$shouldBe" ]; then

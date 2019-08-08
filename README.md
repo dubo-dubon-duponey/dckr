@@ -82,6 +82,16 @@ Otherwise (or if you don't brew):
   * clone "somewhere"
   * add "somewhere" to your path
 
+## CI
+
+In order to avoid rebuilding all the base images at each CI run, you can leverage `dckr` cache:
+
+```base
+CACHE_DIR=somewhere dckr
+```
+
+And instruct your CI to cache `somewhere`.
+
 ## Gotcha
 
 Expect running complicated shell commands to be challenging (you have to get your escaping right).
@@ -107,10 +117,6 @@ You need `docker`, `shellcheck` and `hadolint` installed.
  * the proper way to docker-ize your application for production
  * meant to be used to reproduce complex, multi-containers applications
  * a replacement for compose
-
-## TODO
-
- * investigate how to make this useful on different architectures / buildx
 
 ## License
 

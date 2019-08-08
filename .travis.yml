@@ -1,12 +1,13 @@
 language: bash
 
-services:
-  - docker
-
 addons:
   apt:
     packages:
     - shellcheck
+
+cache:
+  directories:
+    - cache
 
 install:
   - curl -sL -o hadolint "https://github.com/hadolint/hadolint/releases/download/v1.16.0/hadolint-$(uname -s)-$(uname -m)"
