@@ -6,25 +6,24 @@
 # - we transparently pass any command to be exec-ed inside this container
 ############################
 
-TERM=${TERM:-}
 NO_CACHE=${NO_CACHE:-}
 CACHE_DIR=${CACHE_DIR:-}
 DOCKERFILE=${DOCKERFILE:-}
 TARGET=${TARGET:-}
 
-PLATFORMS=("alpine-current" "alpine-next" "debian-old" "debian-current" "debian-next" "ubuntu-lts-old" "ubuntu-lts-current" "ubuntu-current" "ubuntu-next")
+PLATFORMS=("alpine-38" "alpine-39" "alpine-310" "alpine-311" "alpine-next" "debian-8" "debian-9" "debian-10" "debian-current" "debian-next" "ubuntu-1404" "ubuntu-1604" "ubuntu-1804" "ubuntu-current" "ubuntu-next")
 
 CONST_DCKR_PREFIX="com.dbdbdp.dckr"
 
 ############################
 # generic Helpers
 ############################
-DCKR_COLOR_RED=1
-DCKR_COLOR_GREEN=2
-DCKR_COLOR_YELLOW=3
+DP_COLOR_RED=1
+DP_COLOR_GREEN=2
+DP_COLOR_YELLOW=3
 
 # Prefix a date to a log line and output to stderr
-_dckr_stamp(){
+_dp_stamp(){
   local color="$1"
   local level="$2"
   local i
@@ -37,21 +36,26 @@ _dckr_stamp(){
   [ "$TERM" ] && [ -t 2 ] && >&2 tput op
 }
 
-dckr_logger_info(){
-  _dckr_stamp "$DCKR_COLOR_GREEN" "INFO" "$@"
+dp_logger_info(){
+  _dp_stamp "$DP_COLOR_GREEN" "INFO" "$@"
 }
 
-dckr_logger_warning(){
-  _dckr_stamp "$DCKR_COLOR_YELLOW" "WARNING" "$@"
+dp_logger_warning(){
+  _dp_stamp "$DP_COLOR_YELLOW" "WARNING" "$@"
 }
 
-dckr_logger_error(){
-  _dckr_stamp "$DCKR_COLOR_RED" "ERROR" "$@"
+dp_logger_error(){
+  _dp_stamp "$DP_COLOR_RED" "ERROR" "$@"
 }
 
 # Check that we have docker
 if ! command -v docker >/dev/null; then
-  dckr_logger_error "You need to install docker for this to work."
+  dp_logger_error "You need to install docker for this to work."
+  exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  dp_logger_error "Docker does not seem to be running."
   exit 1
 fi
 
@@ -59,23 +63,23 @@ docker_remove_image(){
   local tag="$1"
   local ex
 
-  dckr_logger_info " >>> Removing image ${CONST_DCKR_PREFIX}:${tag}"
+  dp_logger_info " >>> Removing image ${CONST_DCKR_PREFIX}:${tag}"
 
   if ! ex="$(docker images -q "${CONST_DCKR_PREFIX}:${tag}")"; then
-    dckr_logger_error "Docker failed to lookup images!"
+    dp_logger_error "Docker failed to lookup images!"
     exit 1
   fi
   if [ ! "$ex" ]; then
-    dckr_logger_info "No such image. Doing nothing."
+    dp_logger_info "No such image. Doing nothing."
     return
   fi
   # shellcheck disable=SC2086
   if ! docker rmi -f $ex 1>&2; then
-    dckr_logger_error "Docker failed to remove the image" "$ex"
+    dp_logger_error "Docker failed to remove the image" "$ex"
     # XXX
     # exit 1
   fi
-  dckr_logger_info "Done removing image."
+  dp_logger_info "Done removing image."
 }
 
 dckr_has_image(){
@@ -86,12 +90,12 @@ dckr_has_image(){
   local dckr_git="$2"
   local local_git="$3"
 
-  dckr_logger_info " >>> Looking up image ${CONST_DCKR_PREFIX}:${tag} with dckr-git=$dckr_git and local-git=$local_git"
+  dp_logger_info " >>> Looking up image ${CONST_DCKR_PREFIX}:${tag} with dckr-git=$dckr_git and local-git=$local_git"
 
   if ! docker images -q "${CONST_DCKR_PREFIX}:${tag}" \
     --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
     --filter "label=${CONST_DCKR_PREFIX}.local_git=${local_git}"; then
-    dckr_logger_error "Docker failed to lookup images!"
+    dp_logger_error "Docker failed to lookup images!"
     exit 1
   fi
 }
@@ -108,16 +112,16 @@ docker_build_image(){
   local dockerfile="$4"
   local target="$5"
 
-  dckr_logger_info " >>> Building from Dockerfile: $dockerfile" "Target: $target" "dckr-git: $dckr_git" "local-git: $local_git"
+  dp_logger_info " >>> Building from Dockerfile: $dockerfile" "Target: $target" "dckr-git: $dckr_git" "local-git: $local_git"
 
   if ! docker build --target "${target}" -t "${CONST_DCKR_PREFIX}:${tag}" \
     --label "${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
     --label "${CONST_DCKR_PREFIX}.local_git=${local_git}" \
     -f "${dockerfile}" . 1>&2; then
-    dckr_logger_error "Failed building!"
+    dp_logger_error "Failed building!"
     exit 1
   fi
-  dckr_logger_info "Done" "Tagged as ${CONST_DCKR_PREFIX}:${tag}"
+  dp_logger_info "Done" "Tagged as ${CONST_DCKR_PREFIX}:${tag}"
 }
 
 dckr_remove_containers(){
@@ -129,25 +133,25 @@ dckr_remove_containers(){
 
   local ex
 
-  dckr_logger_info " >>> Removing container from image ${CONST_DCKR_PREFIX}:${tag} mounted on $path"
+  dp_logger_info " >>> Removing container from image ${CONST_DCKR_PREFIX}:${tag} mounted on $path"
 
   if ! ex="$(docker ps -qa \
     --filter "ancestor=${CONST_DCKR_PREFIX}:${tag}" \
     --filter "volume=$path"
   )"; then
-    dckr_logger_error "Docker failed to lookup container!"
+    dp_logger_error "Docker failed to lookup container!"
     exit 1
   fi
   if [ ! "$ex" ]; then
-    dckr_logger_info "No such container. Doing nothing."
+    dp_logger_info "No such container. Doing nothing."
     return
   fi
   # shellcheck disable=SC2086
   if ! docker rm -f $ex 1>&2; then
-    dckr_logger_error "Docker failed to remove container" "$ex"
+    dp_logger_error "Docker failed to remove container" "$ex"
     exit 1
   fi
-  dckr_logger_info "Done removing container."
+  dp_logger_info "Done removing container."
 }
 
 dckr_has_container(){
@@ -161,14 +165,14 @@ dckr_has_container(){
   local dckr_git="$3"
   local local_git="$4"
 
-  dckr_logger_info " >>> Looking up container ${CONST_DCKR_PREFIX}:${tag} mounted on $path with dckr-git=$dckr_git and local-git=$local_git"
+  dp_logger_info " >>> Looking up container ${CONST_DCKR_PREFIX}:${tag} mounted on $path with dckr-git=$dckr_git and local-git=$local_git"
 
   if ! docker ps -q \
     --filter "ancestor=${CONST_DCKR_PREFIX}:${tag}" \
     --filter "volume=$path" \
     --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
     --filter "label=${CONST_DCKR_PREFIX}.local_git=${local_git}"; then
-    dckr_logger_error "Docker failed to list containers"
+    dp_logger_error "Docker failed to list containers"
     exit 1
   fi
 }
@@ -184,14 +188,14 @@ dckr_run_container(){
   local dckr_git="$3"
   local local_git="$4"
 
-  dckr_logger_info " >>> Running container from ${CONST_DCKR_PREFIX}:${tag} with path $path and labels dckr-git: $dckr_git and local-git: $local_git"
+  dp_logger_info " >>> Running container from ${CONST_DCKR_PREFIX}:${tag} with path $path and labels dckr-git: $dckr_git and local-git: $local_git"
 
   if ! docker run --detach --tty --restart always \
     --volume "$path":/dckr-project-mount \
     --label="${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
     --label="${CONST_DCKR_PREFIX}.local_git=${local_git}" \
     "${CONST_DCKR_PREFIX}:${tag}"; then
-    dckr_logger_error "Docker failed to run container"
+    dp_logger_error "Docker failed to run container"
     exit 1
   fi
 }
@@ -203,8 +207,8 @@ _here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
 
 # Allows switching to a different Dockerfile
 DCKR_DOCKERFILE="${DOCKERFILE:-$_here/dckr.Dockerfile}"
-# Target inside the image - default to alpine-current
-DCKR_TARGET="${TARGET:-alpine-current}"
+# Target inside the image - default to debian-current
+DCKR_TARGET="${TARGET:-debian-current}"
 # Local cache
 DCKR_CACHE="${CACHE_DIR:-$_here/cache}"
 
@@ -250,7 +254,7 @@ if [ ! "$id" ]; then
 
   # Build everything: start with dckr base images
   for i in "${PLATFORMS[@]}"; do
-    dckr_logger_info " *** Checking image $i"
+    dp_logger_info " *** Checking image $i"
     im=$(dckr_has_image "$i" "$DCKR_HASH" "$DCKR_HASH")
     # If our image is not there
     if [ ! "$im" ]; then
@@ -282,9 +286,9 @@ fi
 # Now, we know we have a running container from an up to date image, for sure
 # We can now exec the command we were asked to perform
 # Caveat: shell expansion happens on the host, unless you get your escaping right...
-dckr_logger_info "Running command '$*'"
-dckr_logger_info " - target: $DCKR_TARGET" " - origin dockerfile: $DCKR_DOCKERFILE" " - id: '${id}'"
+dp_logger_info "Running command '$*'"
+dp_logger_info " - target: $DCKR_TARGET" " - origin dockerfile: $DCKR_DOCKERFILE" " - id: '${id}'"
 if ! docker exec -ti "${id}" "$@"; then
-  dckr_logger_error "Docker failed to run command!"
+  dp_logger_error "Docker failed to run command!"
   exit 1
 fi

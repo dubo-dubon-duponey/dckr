@@ -1,5 +1,10 @@
 language: bash
 
+matrix:
+  include:
+    - os: linux
+      dist: bionic
+
 addons:
   apt:
     packages:
@@ -16,7 +21,3 @@ install:
 script:
   - PATH=$PATH:$(pwd) ./test.sh
 
-matrix:
-  include:
-    - os: linux
-      dist: bionic
