@@ -1,5 +1,10 @@
 language: bash
 
+matrix:
+  include:
+    - os: linux
+      dist: bionic
+
 addons:
   apt:
     packages:
@@ -10,13 +15,9 @@ cache:
     - cache
 
 install:
-  - curl -sL -o hadolint "https://github.com/hadolint/hadolint/releases/download/v1.16.0/hadolint-$(uname -s)-$(uname -m)"
+  - curl -sL -o hadolint "https://github.com/hadolint/hadolint/releases/download/v1.17.5/hadolint-$(uname -s)-$(uname -m)"
     && chmod 700 ./hadolint
 
 script:
   - PATH=$PATH:$(pwd) ./test.sh
 
-matrix:
-  include:
-    - os: linux
-      dist: bionic
