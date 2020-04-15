@@ -11,8 +11,8 @@ logger::info "Testing default target"
 
 export CACHE_DIR=cache
 
-shouldBe="Welcome to Alpine Linux 3.10"
-is="$(./dckr cat /etc/issue 2>/dev/null | grep Alpine | tr -s '\r' '\n')"
+shouldBe="Debian GNU/Linux bullseye/sid \n \l"
+is="$(./dckr cat /etc/issue 2>/dev/null | grep Debian | tr -s '\r' '\n')" || true
 if [ "$is" != "$shouldBe" ]; then
   logger::error "Should have been: $shouldBe"
   logger::error "Was: $is"
@@ -21,8 +21,8 @@ fi
 
 logger::info "Testing custom target"
 
-shouldBe="Ubuntu 18.04.2 LTS \n \l"
-is="$(TARGET=ubuntu-lts-current ./dckr cat /etc/issue 2>/dev/null | grep Ubuntu | tr -s '\r' '\n')"
+shouldBe="Ubuntu 14.04.6 LTS \n \l"
+is="$(TARGET=ubuntu-1404 ./dckr cat /etc/issue 2>/dev/null | grep Ubuntu | tr -s '\r' '\n')" || true
 if [ "$is" != "$shouldBe" ]; then
   logger::error "Should have been: $shouldBe"
   logger::error "Was: $is"
@@ -32,7 +32,7 @@ fi
 logger::info "Testing custom dockerfile with debian target"
 
 shouldBe="version: 0.5.0"
-is="$(DOCKERFILE=./dckr.Dockerfile.example TARGET=debian-current ./dckr shellcheck --version  2>/dev/null | grep version: | tr -s '\r' '\n')"
+is="$(DOCKERFILE=./dckr.Dockerfile.example TARGET=debian-10 ./dckr shellcheck --version  2>/dev/null | grep version: | tr -s '\r' '\n')" || true
 if [ "$is" != "$shouldBe" ]; then
   logger::error "Should have been: $shouldBe"
   logger::error "Was: $is"

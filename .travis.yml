@@ -15,7 +15,7 @@ cache:
     - cache
 
 install:
-  - curl -sL -o hadolint "https://github.com/hadolint/hadolint/releases/download/v1.16.0/hadolint-$(uname -s)-$(uname -m)"
+  - curl -sL -o hadolint "https://github.com/hadolint/hadolint/releases/download/v1.17.5/hadolint-$(uname -s)-$(uname -m)"
     && chmod 700 ./hadolint
 
 script:
