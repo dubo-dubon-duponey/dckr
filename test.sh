@@ -11,8 +11,8 @@ logger::info "Testing default target"
 
 export CACHE_DIR=cache
 
-shouldBe="Debian GNU/Linux bullseye/sid \n \l"
-is="$(./dckr cat /etc/issue 2>/dev/null | grep Debian | tr -s '\r' '\n')" || true
+shouldBe="/etc/issue"$'\r'
+is="$(./dckr ls /etc/issue 2>/dev/null)" || true
 if [ "$is" != "$shouldBe" ]; then
   logger::error "Should have been: $shouldBe"
   logger::error "Was: $is"

@@ -1,8 +1,5 @@
 # dckr
 
-[![Build Status](https://travis-ci.org/dubo-dubon-duponey/dckr.svg?branch=master)](https://travis-ci.org/dubo-dubon-duponey/dckr)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_shield)
-
 dckr is a simple, no dependency shell-script that transparently lets you develop your project inside containers.
 
 For example, assuming you have a project where you would typically run:
@@ -41,7 +38,7 @@ You can control what base operating system will be used for the container using 
 
 `TARGET` values provided by default are visible in `dckr.Dockerfile`.
 
-If `TARGET` is not specified, the latest alpine is going to be used.
+If `TARGET` is not specified, the latest current Debian is going to be used.
 
 ## Using your own images
 
@@ -117,7 +114,3 @@ You need `docker`, `shellcheck` and `hadolint` installed.
  * the proper way to docker-ize your application for production
  * meant to be used to reproduce complex, multi-containers applications
  * a replacement for compose
-
-## License
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdubo-dubon-duponey%2Fdckr?ref=badge_large)
