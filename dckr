@@ -267,7 +267,8 @@ id="$(dckr_has_container "$tag" "$(pwd)" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")"
 if [ ! "$id" ]; then
   force=
 
-  # XXX This is not working as intended and does leak containers
+  # XXX See https://github.com/dubo-dubon-duponey/dckr/issues/15
+  # This is not working as intended and does leak containers from previous versions of the image
   # Remove all existing containers with that tag in that path (likely stale from old Dockerfile or dckr)
   dckr_remove_containers "$tag" "$(pwd)"
 
