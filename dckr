@@ -11,7 +11,20 @@ CACHE_DIR=${CACHE_DIR:-}
 DOCKERFILE=${DOCKERFILE:-}
 TARGET=${TARGET:-}
 
-PLATFORMS=("alpine-38" "alpine-39" "alpine-310" "alpine-311" "alpine-next" "debian-8" "debian-9" "debian-10" "debian-current" "debian-next" "ubuntu-1404" "ubuntu-1604" "ubuntu-1804" "ubuntu-current" "ubuntu-next")
+# https://ubuntu.com/about/release-cycle
+# Ubuntu 20.04 is EOL April 2025
+
+# https://en.wikipedia.org/wiki/Debian_version_history
+# Debian 10 Buster EOL is 30 June 2024
+
+# https://alpinelinux.org/releases/
+# Alpine 3.16 EOL is 2024-05-23
+
+PLATFORMS=( \
+  "alpine-316" "alpine-317" "alpine-318" "alpine-319" "alpine-next" \
+  "debian-10" "debian-11" "debian-12" "debian-current" "debian-next" \
+  "ubuntu-2004" "ubuntu-2204" "ubuntu-2404" "ubuntu-current" "ubuntu-next" \
+)
 
 CONST_DCKR_PREFIX="com.dbdbdp.dckr"
 
@@ -70,7 +83,7 @@ docker_remove_image(){
     exit 1
   fi
   if [ ! "$ex" ]; then
-    dp_logger_info "No such image. Doing nothing."
+    dp_logger_warning "No such image. Doing nothing."
     return
   fi
   # shellcheck disable=SC2086
@@ -86,15 +99,15 @@ dckr_has_image(){
   # Tag name for the image to find
   local tag="$1"
 
-  # Git information to match
-  local dckr_git="$2"
-  local local_git="$3"
+  # sha information to match
+  local dckr_sha="$2"
+  local local_sha="$3"
 
-  dp_logger_info " >>> Looking up image ${CONST_DCKR_PREFIX}:${tag} with dckr-git=$dckr_git and local-git=$local_git"
+  dp_logger_info " >>> Looking up image ${CONST_DCKR_PREFIX}:${tag} with dckr_sha=$dckr_sha and local_sha=$local_sha"
 
   if ! docker images -q "${CONST_DCKR_PREFIX}:${tag}" \
-    --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
-    --filter "label=${CONST_DCKR_PREFIX}.local_git=${local_git}"; then
+    --filter "label=${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
+    --filter "label=${CONST_DCKR_PREFIX}.local_sha=${local_sha}"; then
     dp_logger_error "Docker failed to lookup images!"
     exit 1
   fi
@@ -104,19 +117,19 @@ docker_build_image(){
   # Tag name for the future image
   local tag="$1"
 
-  # Git information to label with
-  local dckr_git="$2"
-  local local_git="$3"
+  # sha information to label with
+  local dckr_sha="$2"
+  local local_sha="$3"
 
   # Dockerfile and target to build from
   local dockerfile="$4"
   local target="$5"
 
-  dp_logger_info " >>> Building from Dockerfile: $dockerfile" "Target: $target" "dckr-git: $dckr_git" "local-git: $local_git"
+  dp_logger_info " >>> Building from Dockerfile: $dockerfile" "Target: $target" "dckr_sha: $dckr_sha" "local_sha: $local_sha"
 
   if ! docker build --target "${target}" -t "${CONST_DCKR_PREFIX}:${tag}" \
-    --label "${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
-    --label "${CONST_DCKR_PREFIX}.local_git=${local_git}" \
+    --label "${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
+    --label "${CONST_DCKR_PREFIX}.local_sha=${local_sha}" \
     -f "${dockerfile}" . 1>&2; then
     dp_logger_error "Failed building!"
     exit 1
@@ -161,17 +174,17 @@ dckr_has_container(){
   # Mounted path
   local path="$2"
 
-  # Git information to label with
-  local dckr_git="$3"
-  local local_git="$4"
+  # sha information to label with
+  local dckr_sha="$3"
+  local local_sha="$4"
 
-  dp_logger_info " >>> Looking up container ${CONST_DCKR_PREFIX}:${tag} mounted on $path with dckr-git=$dckr_git and local-git=$local_git"
+  dp_logger_info " >>> Looking up container ${CONST_DCKR_PREFIX}:${tag} mounted on $path with dckr_sha=$dckr_sha and local_sha=$local_sha"
 
   if ! docker ps -q \
     --filter "ancestor=${CONST_DCKR_PREFIX}:${tag}" \
     --filter "volume=$path" \
-    --filter "label=${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
-    --filter "label=${CONST_DCKR_PREFIX}.local_git=${local_git}"; then
+    --filter "label=${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
+    --filter "label=${CONST_DCKR_PREFIX}.local_sha=${local_sha}"; then
     dp_logger_error "Docker failed to list containers"
     exit 1
   fi
@@ -184,16 +197,16 @@ dckr_run_container(){
   # Mounted path
   local path="$2"
 
-  # Git information to label with
-  local dckr_git="$3"
-  local local_git="$4"
+  # sha information to label with
+  local dckr_sha="$3"
+  local local_sha="$4"
 
-  dp_logger_info " >>> Running container from ${CONST_DCKR_PREFIX}:${tag} with path $path and labels dckr-git: $dckr_git and local-git: $local_git"
+  dp_logger_info " >>> Running container from ${CONST_DCKR_PREFIX}:${tag} with path $path and labels dckr_sha: $dckr_sha and local_sha: $local_sha"
 
   if ! docker run --detach --tty --restart always \
     --volume "$path":/dckr-project-mount \
-    --label="${CONST_DCKR_PREFIX}.dckr_git=${dckr_git}" \
-    --label="${CONST_DCKR_PREFIX}.local_git=${local_git}" \
+    --label="${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
+    --label="${CONST_DCKR_PREFIX}.local_sha=${local_sha}" \
     "${CONST_DCKR_PREFIX}:${tag}"; then
     dp_logger_error "Docker failed to run container"
     exit 1
@@ -220,6 +233,13 @@ dckr_loadcache(){
   done
 }
 
+dckr_loadcache_one(){
+  local cachedir="$1"
+  local target="$2"
+  mkdir -p "$cachedir"
+  docker load --input "$cachedir/$target"
+}
+
 dckr_savecache(){
   local cachedir="$1"
   mkdir -p "$cachedir"
@@ -227,8 +247,6 @@ dckr_savecache(){
     docker save "com.dbdbdp.dckr:$i" --output "$cachedir/$i"
   done
 }
-
-[ "$NO_CACHE" ] || dckr_loadcache "$DCKR_CACHE"
 
 # DCKR hash
 DCKR_HASH="$(cat "$_here/dckr" "$_here/dckr.Dockerfile" | shasum -a 256)"
@@ -249,26 +267,38 @@ id="$(dckr_has_container "$tag" "$(pwd)" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")"
 if [ ! "$id" ]; then
   force=
 
+  # XXX This is not working as intended and does leak containers
   # Remove all existing containers with that tag in that path (likely stale from old Dockerfile or dckr)
   dckr_remove_containers "$tag" "$(pwd)"
 
-  # Build everything: start with dckr base images
+  # We obviously need to be sure everything is fine, so start with dckr base images - check them all and either
+  # load from cache or build
   for i in "${PLATFORMS[@]}"; do
     dp_logger_info " *** Checking image $i"
     im=$(dckr_has_image "$i" "$DCKR_HASH" "$DCKR_HASH")
-    # If our image is not there
+    # If our image is not there with the right hash
     if [ ! "$im" ]; then
-      # Remove possibly stale images from previous commits
-      docker_remove_image "$i"
-      # Build the image
-      docker_build_image "$i" "$DCKR_HASH" "$DCKR_HASH" "$_here/dckr.Dockerfile" "$i"
-      # Must rebuild the other image as well, because they may have changed
-      force=true
+      # Load cache if there
+      [ "$NO_CACHE" ] || dckr_loadcache_one "$DCKR_CACHE" "$i" || true
+
+      # Try again
+      im=$(dckr_has_image "$i" "$DCKR_HASH" "$DCKR_HASH")
+      # If our image is not there with the right hash
+      if [ ! "$im" ]; then
+        # Nothing? Build
+        # Remove possibly stale images from previous commits
+        # XXX is this still failing in case containers are running?
+        docker_remove_image "$i"
+        # Build the image
+        docker_build_image "$i" "$DCKR_HASH" "$DCKR_HASH" "$_here/dckr.Dockerfile" "$i"
+        # Must rebuild the other image as well, because they may have changed
+        force=true
+      fi
     fi
   done
 
   # If any image was updated, consider it a go to save
-  [ ! "$force" ] || dckr_savecache "$DCKR_CACHE"
+  [ ! "$force" ] || [ "$NO_CACHE" ] || dckr_savecache "$DCKR_CACHE"
 
   # Now, our target image
   im=$(dckr_has_image "$tag" "$DCKR_HASH" "$DCKR_DOCKERFILE_HASH")
