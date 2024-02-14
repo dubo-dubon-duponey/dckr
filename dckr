@@ -83,7 +83,7 @@ docker_remove_image(){
     exit 1
   fi
   if [ ! "$ex" ]; then
-    dp_logger_warn "No such image. Doing nothing."
+    dp_logger_warning "No such image. Doing nothing."
     return
   fi
   # shellcheck disable=SC2086
