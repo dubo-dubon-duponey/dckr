@@ -180,9 +180,10 @@ dckr_has_container(){
 
   dp_logger_info " >>> Looking up container ${CONST_DCKR_PREFIX}:${tag} mounted on $path with dckr_sha=$dckr_sha and local_sha=$local_sha"
 
+#    --filter "volume=$path" \
   if ! docker ps -q \
     --filter "ancestor=${CONST_DCKR_PREFIX}:${tag}" \
-    --filter "volume=$path" \
+    --filter "label=${CONST_DCKR_PREFIX}.project=$path" \
     --filter "label=${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
     --filter "label=${CONST_DCKR_PREFIX}.local_sha=${local_sha}"; then
     dp_logger_error "Docker failed to list containers"
@@ -205,6 +206,7 @@ dckr_run_container(){
 
   if ! docker run --detach --tty --restart always \
     --volume "$path":/dckr-project-mount \
+    --label="${CONST_DCKR_PREFIX}.project=${path}" \
     --label="${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
     --label="${CONST_DCKR_PREFIX}.local_sha=${local_sha}" \
     "${CONST_DCKR_PREFIX}:${tag}"; then
