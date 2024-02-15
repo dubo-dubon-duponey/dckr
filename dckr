@@ -23,7 +23,7 @@ TARGET=${TARGET:-}
 PLATFORMS=( \
   "alpine-316" "alpine-317" "alpine-318" "alpine-319" "alpine-next" \
   "debian-10" "debian-11" "debian-12" "debian-current" "debian-next" \
-  "ubuntu-2004" "ubuntu-2204" "ubuntu-2404" "ubuntu-current" "ubuntu-next" \
+  "ubuntu-2004" "ubuntu-2204" "ubuntu-current" "ubuntu-next" \
 )
 
 PLATFORMS+=( \
