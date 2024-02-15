@@ -27,7 +27,7 @@ PLATFORMS=( \
 )
 
 PLATFORMS+=( \
-  "ubuntu-1404" "ubuntu-1604" \
+  "ubuntu-1404" "ubuntu-1604" "ubuntu-1804" \
 )
 
 CONST_DCKR_PREFIX="com.dbdbdp.dckr"
