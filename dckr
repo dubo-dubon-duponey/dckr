@@ -136,7 +136,7 @@ docker_build_image(){
   if ! docker build --target "${target}" -t "${CONST_DCKR_PREFIX}:${tag}" \
     --label "${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
     --label "${CONST_DCKR_PREFIX}.local_sha=${local_sha}" \
-    - . < "${dockerfile}" 1>&2; then
+    -f - . < "${dockerfile}" 1>&2; then
     dp_logger_error "Failed building!"
     exit 1
   fi
