@@ -131,10 +131,12 @@ docker_build_image(){
 
   dp_logger_info " >>> Building from Dockerfile: $dockerfile" "Target: $target" "dckr_sha: $dckr_sha" "local_sha: $local_sha"
 
+  # XXX docker on mac file sharing / mounting sucks big time - just avoid it
+  # and pipe in the Dockerfile
   if ! docker build --target "${target}" -t "${CONST_DCKR_PREFIX}:${tag}" \
     --label "${CONST_DCKR_PREFIX}.dckr_sha=${dckr_sha}" \
     --label "${CONST_DCKR_PREFIX}.local_sha=${local_sha}" \
-    -f "${dockerfile}" . 1>&2; then
+    - . < "${dockerfile}" 1>&2; then
     dp_logger_error "Failed building!"
     exit 1
   fi
@@ -222,7 +224,7 @@ dckr_run_container(){
 
 # Internal
 # XXX this is not portable - anyway to make it work for sh? using $0 would fail miserably with the right symlink combination, and readlink on mac is DOA
-_here=$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)
+_here="$(cd "$(dirname "${BASH_SOURCE[0]:-$PWD}")" 2>/dev/null 1>&2 && pwd)"
 
 # Allows switching to a different Dockerfile
 DCKR_DOCKERFILE="${DOCKERFILE:-$_here/dckr.Dockerfile}"
